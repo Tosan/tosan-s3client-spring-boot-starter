@@ -67,7 +67,7 @@ class S3ObservationInterceptor_afterExecutionUTest extends ObservationBaseUTest 
         String serviceName = "s3";
         String operation = "PutObject";
         String requestId = "sample_id";
-        Integer statusCode = 400;
+        int statusCode = 400;
         PutObjectRequest request = PutObjectRequest.builder().bucket(bucketName).key("test.txt").build();
         PutObjectResponse response = mock(PutObjectResponse.class);
         SdkHttpResponse httpResponse = mock(SdkHttpResponse.class);
@@ -89,7 +89,7 @@ class S3ObservationInterceptor_afterExecutionUTest extends ObservationBaseUTest 
         interceptor.afterExecution(afterContext, attrs);
         List<SpanData> spans = spanExporter.getFinishedSpanItems();
         assertThat(spans).hasSize(1);
-        SpanData span = spans.getFirst();
+        SpanData span = spans.get(0);
         Assertions.assertEquals(serviceName, span.getAttributes().get(AttributeKey.stringKey("s3.service")));
         Assertions.assertEquals(operation, span.getAttributes().get(AttributeKey.stringKey("s3.operation")));
         Assertions.assertEquals(bucketName, span.getAttributes().get(AttributeKey.stringKey("s3.bucket")));
@@ -104,7 +104,7 @@ class S3ObservationInterceptor_afterExecutionUTest extends ObservationBaseUTest 
         String bucketName = "test_logs";
         String serviceName = "s3";
         String operation = "PutObject";
-        Integer statusCode = 200;
+        int statusCode = 200;
         PutObjectRequest request = PutObjectRequest.builder().bucket(bucketName).key("test.txt").build();
         PutObjectResponse response = mock(PutObjectResponse.class);
         S3ResponseMetadata s3ResponseMetadata = S3ResponseMetadata.create(

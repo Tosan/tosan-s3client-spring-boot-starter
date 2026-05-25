@@ -18,16 +18,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata;
 import software.amazon.awssdk.core.interceptor.Context;
 import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
 import software.amazon.awssdk.core.interceptor.SdkExecutionAttribute;
-import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -82,7 +78,7 @@ class S3ObservationInterceptor_failureExecutionUTest extends ObservationBaseUTes
         interceptor.onExecutionFailure(failedExecution, attrs);
         List<SpanData> spans = spanExporter.getFinishedSpanItems();
         assertThat(spans).hasSize(1);
-        SpanData span = spans.getFirst();
+        SpanData span = spans.get(0);
         Assertions.assertEquals(serviceName, span.getAttributes().get(AttributeKey.stringKey("s3.service")));
         Assertions.assertEquals(operation, span.getAttributes().get(AttributeKey.stringKey("s3.operation")));
         Assertions.assertEquals(bucketName, span.getAttributes().get(AttributeKey.stringKey("s3.bucket")));
