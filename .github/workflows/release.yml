@@ -18,6 +18,7 @@ jobs:
     steps:
       - name: Checkout project
         uses: actions/checkout@v4
+
       - name: Setup Java JDK
         uses: actions/setup-java@v4
         with:
@@ -25,22 +26,29 @@ jobs:
           distribution: temurin
           cache: maven
           server-id: github
+
       - name: Configure Git user
         run: |
-           git config user.email "actions@github.com"
-           git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+
       - name: Publish JAR
         run: |
-           mvn -B release:clean release:prepare release:perform -DreleaseVersion=${{ github.event.inputs.releaseVersion }} -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }}
+          mvn -B release:clean release:prepare release:perform \
+            -DreleaseVersion=${{ github.event.inputs.releaseVersion }} \
+            -DdevelopmentVersion=${{ github.event.inputs.developmentVersion }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   deploy-to-central:
     needs: release-to-github
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Tagged Version
+        uses: actions/checkout@v4
         with:
           ref: v${{ github.event.inputs.releaseVersion }}
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -52,10 +60,12 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
       - name: Configure Git user
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
+
       - name: Release and publish to the Maven Central Repository
         run: |
           mvn \
