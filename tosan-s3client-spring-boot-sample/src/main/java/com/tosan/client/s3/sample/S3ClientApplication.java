@@ -3,7 +3,6 @@ package com.tosan.client.s3.sample;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.http.MediaType;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -43,7 +42,7 @@ public class S3ClientApplication implements CommandLineRunner {
             PutObjectRequest request = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(objectKey)
-                    .contentType(MediaType.IMAGE_JPEG_VALUE)
+                    .contentType("image/jpeg")
                     .contentLength((long) data.length)
                     .build();
             s3Client.putObject(request, RequestBody.fromBytes(data));
