@@ -1,6 +1,6 @@
-package com.tosan.s3client.starter.configuration;
+package com.tosan.client.s3.starter.configuration;
 
-import com.tosan.s3client.starter.util.HttpStatusMessages;
+import com.tosan.client.s3.starter.util.HttpStatusMessages;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;

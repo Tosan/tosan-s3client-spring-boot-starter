@@ -1,4 +1,4 @@
-package com.tosan.s3client.starter.util;
+package com.tosan.client.s3.starter.util;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

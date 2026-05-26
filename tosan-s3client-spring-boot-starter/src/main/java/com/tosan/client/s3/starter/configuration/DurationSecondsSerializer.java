@@ -1,4 +1,4 @@
-package com.tosan.s3client.starter.configuration;
+package com.tosan.client.s3.starter.configuration;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;

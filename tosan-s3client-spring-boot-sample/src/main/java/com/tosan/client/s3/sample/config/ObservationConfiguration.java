@@ -1,4 +1,4 @@
-package com.tosan.s3client.sample.config;
+package com.tosan.client.s3.sample.config;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.context.annotation.Bean;

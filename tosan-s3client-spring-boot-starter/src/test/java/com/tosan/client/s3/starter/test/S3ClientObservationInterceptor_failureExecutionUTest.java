@@ -1,6 +1,8 @@
-package com.tosan.s3client.starter.configuration;
+package com.tosan.client.s3.starter.test;
 
-import com.tosan.s3client.starter.util.HttpStatusMessages;
+import com.tosan.client.s3.starter.configuration.S3ClientLoggerUtil;
+import com.tosan.client.s3.starter.configuration.S3ClientObservationInterceptor;
+import com.tosan.client.s3.starter.util.HttpStatusMessages;
 import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
@@ -14,26 +16,24 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata;
-import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
-
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.core.interceptor.Context;
+import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
 import software.amazon.awssdk.core.interceptor.SdkExecutionAttribute;
-import software.amazon.awssdk.http.SdkHttpResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
-import software.amazon.awssdk.services.s3.model.S3ResponseMetadata;
 
 import java.util.List;
-import java.util.Map;
-
-import static org.mockito.Mockito.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-class S3ClientObservationInterceptor_afterExecutionUTest extends ObservationBaseUTest {
+@ExtendWith(MockitoExtension.class)
+class S3ClientObservationInterceptor_failureExecutionUTest extends ObservationBaseUTest {
 
     @BeforeEach
     void setup() {
@@ -62,31 +62,23 @@ class S3ClientObservationInterceptor_afterExecutionUTest extends ObservationBase
     }
 
     @Test
-    void afterExecution_tracingSuccessRecorded() {
+    void onExecutionFailure_tracingSuccessRecorded() {
         String bucketName = "test_logs";
         String serviceName = "s3";
         String operation = "PutObject";
         String requestId = "sample_id";
         int statusCode = 400;
         PutObjectRequest request = PutObjectRequest.builder().bucket(bucketName).key("test.txt").build();
-        PutObjectResponse response = mock(PutObjectResponse.class);
-        SdkHttpResponse httpResponse = mock(SdkHttpResponse.class);
-        when(httpResponse.statusCode()).thenReturn(statusCode);
-        when(response.sdkHttpResponse()).thenReturn(httpResponse);
-        Map<String, String> map = Map.of("x-amz-request-id", requestId);
-        when(response.responseMetadata()).thenReturn(
-                S3ResponseMetadata.create(DefaultAwsResponseMetadata.create(
-                        map
-                )));
         ExecutionAttributes attrs = new ExecutionAttributes();
         attrs.putAttribute(SdkExecutionAttribute.SERVICE_NAME, serviceName);
         attrs.putAttribute(SdkExecutionAttribute.OPERATION_NAME, operation);
         Context.BeforeExecution beforeContext = mock(Context.BeforeExecution.class);
         when(beforeContext.request()).thenReturn(request);
-        Context.AfterExecution afterContext = mock(Context.AfterExecution.class);
-        when(afterContext.response()).thenReturn(response);
+        Context.FailedExecution failedExecution = mock(Context.FailedExecution.class);
+        when(failedExecution.exception()).thenReturn(NoSuchBucketException.builder()
+                .statusCode(statusCode).requestId(requestId).build());
         interceptor.beforeExecution(beforeContext, attrs);
-        interceptor.afterExecution(afterContext, attrs);
+        interceptor.onExecutionFailure(failedExecution, attrs);
         List<SpanData> spans = spanExporter.getFinishedSpanItems();
         assertThat(spans).hasSize(1);
         SpanData span = spans.get(0);
@@ -96,39 +88,31 @@ class S3ClientObservationInterceptor_afterExecutionUTest extends ObservationBase
         Assertions.assertEquals(requestId, span.getAttributes().get(AttributeKey.stringKey("s3.request_id")));
         Assertions.assertEquals(HttpStatusMessages.getStatusMessage(statusCode),
                 span.getAttributes().get(AttributeKey.stringKey("s3.status_code")));
-
     }
 
     @Test
-    void afterExecution_metricsSuccessRecorded() {
+    void onExecutionFailure_metricsSuccessRecorded() {
         String bucketName = "test_logs";
         String serviceName = "s3";
         String operation = "PutObject";
-        int statusCode = 200;
+        int statusCode = 400;
         PutObjectRequest request = PutObjectRequest.builder().bucket(bucketName).key("test.txt").build();
-        PutObjectResponse response = mock(PutObjectResponse.class);
-        S3ResponseMetadata s3ResponseMetadata = S3ResponseMetadata.create(
-                DefaultAwsResponseMetadata.create(
-                        Map.of("x-amz-request-id", "sample_id")
-                ));
-        when(response.responseMetadata()).thenReturn(s3ResponseMetadata);
-        SdkHttpResponse httpResponse = mock(SdkHttpResponse.class);
-        when(httpResponse.statusCode()).thenReturn(statusCode);
-        when(response.sdkHttpResponse()).thenReturn(httpResponse);
         ExecutionAttributes attrs = new ExecutionAttributes();
         attrs.putAttribute(SdkExecutionAttribute.SERVICE_NAME, serviceName);
         attrs.putAttribute(SdkExecutionAttribute.OPERATION_NAME, operation);
         Context.BeforeExecution beforeContext = mock(Context.BeforeExecution.class);
         when(beforeContext.request()).thenReturn(request);
-        Context.AfterExecution afterContext = mock(Context.AfterExecution.class);
-        when(afterContext.response()).thenReturn(response);
+        Context.FailedExecution failedExecution = mock(Context.FailedExecution.class);
+        when(failedExecution.exception()).thenReturn(NoSuchBucketException.builder()
+                .statusCode(statusCode).build());
         interceptor.beforeExecution(beforeContext, attrs);
-        interceptor.afterExecution(afterContext, attrs);
+        interceptor.onExecutionFailure(failedExecution, attrs);
         var timer = meterRegistry.find("s3.sdk_call_service")
                 .tag("s3.bucket", bucketName)
                 .tag("s3.operation", operation)
                 .tag("s3.service", serviceName)
                 .tag("s3.status_code", HttpStatusMessages.getStatusMessage(statusCode))
+                .tag("error", "NoSuchBucketException")
                 .timer();
         assertThat(timer).isNotNull();
         assertThat(timer.count()).isEqualTo(1);

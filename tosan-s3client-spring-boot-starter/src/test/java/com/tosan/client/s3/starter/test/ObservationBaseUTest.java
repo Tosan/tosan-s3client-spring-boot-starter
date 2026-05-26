@@ -1,5 +1,6 @@
-package com.tosan.s3client.starter.configuration;
+package com.tosan.client.s3.starter.test;
 
+import com.tosan.client.s3.starter.configuration.S3ClientObservationInterceptor;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;

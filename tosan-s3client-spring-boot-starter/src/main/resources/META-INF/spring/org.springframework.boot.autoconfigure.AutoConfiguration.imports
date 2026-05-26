@@ -1,1 +1,1 @@
-com.tosan.s3client.starter.configuration.S3ClientAutoConfiguration
+configuration.com.tosan.client.s3.starter.S3ClientAutoConfiguration

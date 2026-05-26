@@ -1,4 +1,4 @@
-package com.tosan.s3client.starter.configuration;
+package com.tosan.client.s3.starter.configuration;
 
 import java.time.Duration;
 

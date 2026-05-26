@@ -1,4 +1,4 @@
-package com.tosan.s3client.sample;
+package com.tosan.client.s3.sample;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
