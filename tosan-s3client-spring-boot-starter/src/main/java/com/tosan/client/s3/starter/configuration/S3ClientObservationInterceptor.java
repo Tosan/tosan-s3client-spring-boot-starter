@@ -8,9 +8,12 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.awscore.AwsResponse;
 import software.amazon.awssdk.awscore.AwsResponseMetadata;
 import software.amazon.awssdk.core.interceptor.*;
+import software.amazon.awssdk.http.SdkHttpMethod;
+import software.amazon.awssdk.http.SdkHttpRequest;
 import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.services.s3.model.*;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.*;
 
@@ -54,18 +57,15 @@ public class S3ClientObservationInterceptor implements ExecutionInterceptor {
                 .start();
         executionAttributes.putAttribute(OBSERVATION_ATTRIBUTE, observation);
         executionAttributes.putAttribute(START_TIME_ATTRIBUTE, System.nanoTime());
-        log.info(s3ClientLoggerUtil.beforeExecution(service, operation, bucket));
     }
 
     @Override
     public void afterExecution(Context.AfterExecution context,
                                ExecutionAttributes executionAttributes) {
         Observation observation = getAttr(executionAttributes, OBSERVATION_ATTRIBUTE);
-        Long startTime = getAttr(executionAttributes, START_TIME_ATTRIBUTE);
-        if (observation == null || startTime == null) {
+        if (observation == null) {
             return;
         }
-        Duration duration = getDuration(startTime);
         if (context.response() instanceof AwsResponse response) {
             String statusCode = "OK";
             if (response.sdkHttpResponse() != null) {
@@ -75,39 +75,16 @@ public class S3ClientObservationInterceptor implements ExecutionInterceptor {
             observation
                     .lowCardinalityKeyValue(STATUS_CODE_KEY, statusCode)
                     .highCardinalityKeyValue(REQUEST_ID_KEY, getOrDefault(requestId));
-            Observation.Context observationContext = observation.getContext();
-            String service = getOrDefault(getAttr(executionAttributes, SdkExecutionAttribute.SERVICE_NAME));
-            String operation = getOrDefault(getAttr(executionAttributes, SdkExecutionAttribute.OPERATION_NAME));
-            String bucket = extractBucket(context.request());
-            if (Objects.equals(bucket, UNKNOWN)) {
-                try {
-                    bucket = observationContext.getLowCardinalityKeyValue(BUCKET_KEY).getValue();
-                } catch (Exception e) {
-                    log.error(e.getMessage());
-                }
-            }
-            log.info(s3ClientLoggerUtil.afterExecution(
-                    service,
-                    operation,
-                    bucket,
-                    statusCode,
-                    duration,
-                    requestId
-            ));
         }
-
         observation.stop();
     }
 
     @Override
-    public void onExecutionFailure(Context.FailedExecution context,
-                                   ExecutionAttributes executionAttributes) {
+    public void onExecutionFailure(Context.FailedExecution context, ExecutionAttributes executionAttributes) {
         Observation observation = getAttr(executionAttributes, OBSERVATION_ATTRIBUTE);
-        Long startTime = getAttr(executionAttributes, START_TIME_ATTRIBUTE);
-        if (observation == null || startTime == null) {
+        if (observation == null) {
             return;
         }
-        Duration duration = getDuration(startTime);
         observation.error(context.exception());
         String statusCode = UNKNOWN;
         String requestId = UNKNOWN;
@@ -118,28 +95,53 @@ public class S3ClientObservationInterceptor implements ExecutionInterceptor {
                     .lowCardinalityKeyValue(STATUS_CODE_KEY, statusCode)
                     .highCardinalityKeyValue(REQUEST_ID_KEY, getOrDefault(requestId));
         }
-        String service = getAttr(executionAttributes, SdkExecutionAttribute.SERVICE_NAME);
-        String operation = getAttr(executionAttributes, SdkExecutionAttribute.OPERATION_NAME);
-        String bucket = extractBucket(context.request());
-        if (Objects.equals(bucket, UNKNOWN)) {
-            try {
-                bucket = observation.getContext().getLowCardinalityKeyValue(BUCKET_KEY).getValue();
-            } catch (Exception e) {
-                log.error(e.getMessage());
-            }
-        }
-        log.error(s3ClientLoggerUtil.onExecutionFailure(
-                service,
-                operation,
-                bucket,
-                statusCode,
-                duration,
-                context.exception(),
-                requestId
-        ));
-
         observation.stop();
     }
+
+    @Override
+    public void beforeTransmission(Context.BeforeTransmission context, ExecutionAttributes executionAttributes) {
+        SdkHttpRequest sdkHttpRequest = context.httpRequest();
+        if (sdkHttpRequest != null) {
+            String service = sdkHttpRequest.encodedQueryParameters().map(param ->
+                    getService(sdkHttpRequest.method(), sdkHttpRequest.getUri(), param)
+            ).orElseGet(() ->
+                    getService(sdkHttpRequest.method(), sdkHttpRequest.getUri())
+            );
+            log.info(s3ClientLoggerUtil.requestLog(DEFAULT_SERVICE_NAME, service, sdkHttpRequest.headers()));
+        }
+        ExecutionInterceptor.super.beforeTransmission(context, executionAttributes);
+    }
+
+    @Override
+    public void afterTransmission(Context.AfterTransmission context, ExecutionAttributes executionAttributes) {
+        Long startTime = getAttr(executionAttributes, START_TIME_ATTRIBUTE);
+        Duration duration = null;
+        if (startTime != null) {
+            duration = getDuration(startTime);
+        }
+        SdkHttpResponse sdkHttpResponse = context.httpResponse();
+        if (sdkHttpResponse != null) {
+            int statusCode = sdkHttpResponse.statusCode();
+            String status = HttpStatusMessages.getStatusMessage(statusCode);
+            if (statusCode >= 400) {
+                log.error(s3ClientLoggerUtil.responseLog(DEFAULT_SERVICE_NAME, status, duration,
+                        sdkHttpResponse.headers()));
+            } else {
+                log.info(s3ClientLoggerUtil.responseLog(DEFAULT_SERVICE_NAME, status, duration,
+                        sdkHttpResponse.headers()));
+            }
+        }
+        ExecutionInterceptor.super.afterTransmission(context, executionAttributes);
+    }
+
+    String getService(SdkHttpMethod method, URI uri, String queryParam) {
+        return String.format("%s %s?%s", method, uri, queryParam);
+    }
+
+    String getService(SdkHttpMethod method, URI uri) {
+        return String.format("%s %s", method, uri);
+    }
+
 
     private String extractBucket(Object request) {
         if (request == null) {
@@ -180,25 +182,5 @@ public class S3ClientObservationInterceptor implements ExecutionInterceptor {
 
     private Duration getDuration(long startTime) {
         return Duration.ofNanos(Math.max(0L, (System.nanoTime() - startTime)));
-    }
-
-    @Override
-    public SdkHttpResponse modifyHttpResponse(Context.ModifyHttpResponse context,
-                                              ExecutionAttributes executionAttributes) {
-        SdkHttpResponse response = context.httpResponse();
-        String seaweedRequestId = response.headers()
-                .get("X-Amz-Request-Id")
-                .stream()
-                .findFirst()
-                .orElse(null);
-        if (seaweedRequestId != null) {
-            Map<String, List<String>> newHeaders = new HashMap<>(response.headers());
-            newHeaders.put("x-amz-request-id", List.of(seaweedRequestId));
-            newHeaders.put("x-amz-id-2", List.of(seaweedRequestId));
-            return response.toBuilder()
-                    .headers(newHeaders)
-                    .build();
-        }
-        return response;
     }
 }

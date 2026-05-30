@@ -30,9 +30,9 @@ public class S3ClientApplication implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         String key = save(new byte[1]);
-        byte[] bytes = find(key);
+        find(key);
         delete(key);
     }
 

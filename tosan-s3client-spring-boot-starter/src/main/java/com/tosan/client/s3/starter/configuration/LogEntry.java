@@ -1,8 +1,11 @@
 package com.tosan.client.s3.starter.configuration;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import software.amazon.awssdk.services.s3.endpoints.internal.Value;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public final class LogEntry {
@@ -10,10 +13,9 @@ public final class LogEntry {
     private final String invoke;
     private final String invoked;
     private final String service;
-    private final String bucket;
+    private final Map<String, List<String>> headers;
     private final String status;
     private final Duration duration;
-    private final String requestId;
     private final String exception;
     private final String message;
 
@@ -21,12 +23,11 @@ public final class LogEntry {
         this.invoke = builder.invoke;
         this.invoked = builder.invoked;
         this.service = builder.service;
-        this.bucket = builder.bucket;
         this.status = builder.status;
         this.duration = builder.duration;
-        this.requestId = builder.requestId;
         this.exception = builder.exception;
         this.message = builder.message;
+        this.headers = builder.headers;
     }
 
     public String getInvoke() {
@@ -41,8 +42,8 @@ public final class LogEntry {
         return service;
     }
 
-    public String getBucket() {
-        return bucket;
+    public Map<String, List<String>> getHeaders() {
+        return headers;
     }
 
     public String getStatus() {
@@ -51,10 +52,6 @@ public final class LogEntry {
 
     public Duration getDuration() {
         return duration;
-    }
-
-    public String getRequestId() {
-        return requestId;
     }
 
     public String getException() {
@@ -73,10 +70,9 @@ public final class LogEntry {
         private String invoke;
         private String invoked;
         private String service;
-        private String bucket;
+        private Map<String, List<String>> headers;
         private String status;
         private Duration duration;
-        private String requestId;
         private String exception;
         private String message;
 
@@ -95,8 +91,8 @@ public final class LogEntry {
             return this;
         }
 
-        public Builder bucket(String bucket) {
-            this.bucket = bucket;
+        public Builder headers(Map<String,List<String>> headers) {
+            this.headers = headers;
             return this;
         }
 
@@ -107,11 +103,6 @@ public final class LogEntry {
 
         public Builder duration(Duration duration) {
             this.duration = duration;
-            return this;
-        }
-
-        public Builder requestId(String requestId) {
-            this.requestId = requestId;
             return this;
         }
 
