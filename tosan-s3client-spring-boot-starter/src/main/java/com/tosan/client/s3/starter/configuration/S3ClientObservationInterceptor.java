@@ -109,7 +109,6 @@ public class S3ClientObservationInterceptor implements ExecutionInterceptor {
             );
             log.info(s3ClientLoggerUtil.requestLog(DEFAULT_SERVICE_NAME, service, sdkHttpRequest.headers()));
         }
-        ExecutionInterceptor.super.beforeTransmission(context, executionAttributes);
     }
 
     @Override
@@ -123,15 +122,16 @@ public class S3ClientObservationInterceptor implements ExecutionInterceptor {
         if (sdkHttpResponse != null) {
             int statusCode = sdkHttpResponse.statusCode();
             String status = HttpStatusMessages.getStatusMessage(statusCode);
-            if (statusCode >= 400) {
-                log.error(s3ClientLoggerUtil.responseLog(DEFAULT_SERVICE_NAME, status, duration,
-                        sdkHttpResponse.headers()));
+            String messageLog = s3ClientLoggerUtil.responseLog(DEFAULT_SERVICE_NAME, status, duration,
+                    sdkHttpResponse.headers());
+            if (statusCode >= 500) {
+                log.error(messageLog);
+            } else if (statusCode >= 400) {
+                log.warn(messageLog);
             } else {
-                log.info(s3ClientLoggerUtil.responseLog(DEFAULT_SERVICE_NAME, status, duration,
-                        sdkHttpResponse.headers()));
+                log.info(messageLog);
             }
         }
-        ExecutionInterceptor.super.afterTransmission(context, executionAttributes);
     }
 
     String getService(SdkHttpMethod method, URI uri, String queryParam) {
