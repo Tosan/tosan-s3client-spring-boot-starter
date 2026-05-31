@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.tosan.client.s3</groupId>
         <artifactId>tosan-s3client-spring-boot-root</artifactId>
-        <version>0.1.1</version>
+        <version>0.1.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>tosan-s3client-spring-boot-starter</artifactId>
