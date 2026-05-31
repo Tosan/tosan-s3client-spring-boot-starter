@@ -10,6 +10,11 @@
     <artifactId>tosan-s3client-spring-boot-sample</artifactId>
     <name>tosan-s3client-spring-boot-sample</name>
 
+    <properties>
+        <maven.install.skip>true</maven.install.skip>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.tosan.client.s3</groupId>
