@@ -13,6 +13,7 @@
     <version>0.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <name>tosan-s3client-spring-boot-starter</name>
     <url>https://github.com/Tosan/tosan-s3client-spring-boot-starter</url>
     <description>This project provides a SpringBoot Starter for AWS SDK S3 client.</description>
 
