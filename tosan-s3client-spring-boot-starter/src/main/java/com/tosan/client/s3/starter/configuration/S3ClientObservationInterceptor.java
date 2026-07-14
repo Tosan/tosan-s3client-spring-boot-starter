@@ -171,10 +171,14 @@ public class S3ClientObservationInterceptor implements ExecutionInterceptor {
     }
 
     private String extractRequestId(AwsResponse response) {
-        return Optional.ofNullable(response.responseMetadata())
-                .map(AwsResponseMetadata::requestId)
-                .orElse(UNKNOWN);
+        if (response == null || response.responseMetadata() == null) {
+            return UNKNOWN;
+        }
+        String requestId = response.responseMetadata().requestId();
+        return (requestId == null || requestId.isBlank()) ? UNKNOWN : requestId;
     }
+
+
 
     private <T> T getAttr(ExecutionAttributes attrs, ExecutionAttribute<T> key) {
         return attrs.getAttribute(key);
