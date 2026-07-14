@@ -1,7 +1,5 @@
 package com.tosan.client.s3.starter.util;
 
-import software.amazon.awssdk.http.HttpStatusCode;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 

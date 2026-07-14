@@ -1,9 +1,10 @@
 package com.tosan.client.s3.starter.configuration;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
 import java.util.List;
@@ -12,12 +13,13 @@ import java.util.Map;
 
 public class S3ClientLoggerUtil {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper()
+    private static final ObjectMapper MAPPER = JsonMapper.builder()
             .enable(SerializationFeature.INDENT_OUTPUT)
             .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-            .setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL)
-            .registerModule(DurationSecondsSerializer.getModule())
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            .changeDefaultPropertyInclusion(v -> v.withValueInclusion(JsonInclude.Include.NON_NULL))
+            .addModule(DurationSecondsSerializer.getModule())
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     public String requestLog(String invoke, String service, Map<String, List<String>> headers) {
         return toJson(LogEntry.builder().service(service).invoke(invoke).headers(headers).build());
