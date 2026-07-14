@@ -14,7 +14,7 @@ A Spring Boot starter for the [AWS SDK S3 client](https://docs.aws.amazon.com/sd
 ## Requirements
 
 - Java 17+
-- Spring Boot 3.5+
+- Spring Boot 4.1+
 
 ## Installation
 
