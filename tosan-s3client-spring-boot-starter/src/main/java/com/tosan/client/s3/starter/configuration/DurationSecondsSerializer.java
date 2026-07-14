@@ -1,16 +1,15 @@
 package com.tosan.client.s3.starter.configuration;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.module.SimpleModule;
 
-import java.io.IOException;
 import java.time.Duration;
 
-public class DurationSecondsSerializer extends JsonSerializer<Duration> {
+public class DurationSecondsSerializer extends ValueSerializer<Duration> {
     @Override
-    public void serialize(Duration duration, JsonGenerator gen, SerializerProvider prov) throws IOException {
+    public void serialize(Duration duration, JsonGenerator gen, SerializationContext ctx) {
         gen.writeString((duration.toMillis() / 1000.0) + "s");
     }
 

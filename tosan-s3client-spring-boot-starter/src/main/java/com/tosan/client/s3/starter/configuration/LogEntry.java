@@ -1,7 +1,6 @@
 package com.tosan.client.s3.starter.configuration;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import software.amazon.awssdk.services.s3.endpoints.internal.Value;
 
 import java.time.Duration;
 import java.util.List;
